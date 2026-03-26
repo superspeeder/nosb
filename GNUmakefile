@@ -1,16 +1,29 @@
 CC = x86_64-elf-gcc
 LD = x86_64-elf-ld
 
-CFLAGS = -ffreestanding -nostdlib -Wall -Wextra
+CFLAGS = -ffreestanding -nostdlib -Wall -Wextra -O2 -Isrc/
+LDFLAGS = -ffreestanding -O2 -nostdlib
 QEMU_FLAGS = -m 8G
 
 .PHONY: all
-all: bin/boot.bin
+all: bin/kernel.elf
 
-bin/%.bin: src/%.asm
+bin/%.asm.o: src/%.asm
 	mkdir -p $(dir $@)
-	nasm $< -f bin -o $@ -I src/
+	nasm $< -f elf32 -o $@ -I src/
+
+bin/%.o: src/%.c
+	mkdir -p $(dir $@)
+	i686-elf-gcc -c $< -o $@ $(CFLAGS)
+
+bin/kernel.elf: bin/kernel.o bin/boot.asm.o
+	mkdir -p $(dir $@)
+	i686-elf-gcc -T linker.ld -o $@ $(LDFLAGS) $^ -lgcc
 
 .PHONY: run
-run: bin/boot.bin
-	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$<,format=raw,index=0,media=disk
+run: bin/kernel.elf
+	qemu-system-x86_64 $(QEMU_FLAGS) -kernel $<
+
+.PHONY: clean
+clean:
+	rm -rf bin/
