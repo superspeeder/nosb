@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "cpu/idt.h"
 
 void *s_mbi;
 void  outb(uint16_t port, uint8_t value) {
@@ -104,33 +105,37 @@ __attribute__((noreturn)) void kernel_main(void *mbi) {
 
     init_ser();
     print_ser("Hello\r\n");
+    idt_init();
 
-    uint32_t mbi_size = *(uint32_t *)mbi;
-    void    *e        = (unsigned char *)mbi + mbi_size;
-    mbi               = (unsigned char *)mbi + 8;
-    while (mbi < e) {
-        struct multiboot_tag *tag = mbi;
-        print_ser("MBI Tag: ");
-        print_uint(tag->type);
-        print_ser("\r\n");
-        if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER) {
-            fb = mbi;
-        }
+    asm volatile ("int $8" :: );
 
-        mbi = (unsigned char *)mbi + ((tag->size + 7) & ~7);
-    }
 
-    if (fb) {
-        print_ser("Framebuffer!\r\n");
-        uint32_t *fba = (uint32_t *)fb->common.framebuffer_addr;
-        // print_uint((uint32_t)((uint64_t)fba >> 32));
-        print_uint((uint32_t)((uint64_t)fba));
-        for (uint32_t y = 0; y < fb->common.framebuffer_height; ++y) {
-            for (uint32_t x = 0; x < fb->common.framebuffer_width; ++x) {
-                fba[y * fb->common.framebuffer_pitch / 4 + x] = 0x00fffff;
-            }
-        }
-    }
+    // uint32_t mbi_size = *(uint32_t *)mbi;
+    // void    *e        = (unsigned char *)mbi + mbi_size;
+    // mbi               = (unsigned char *)mbi + 8;
+    // while (mbi < e) {
+    //     struct multiboot_tag *tag = mbi;
+    //     print_ser("MBI Tag: ");
+    //     print_uint(tag->type);
+    //     print_ser("\r\n");
+    //     if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER) {
+    //         fb = mbi;
+    //     }
+
+    //     mbi = (unsigned char *)mbi + ((tag->size + 7) & ~7);
+    // }
+
+    // if (fb) {
+    //     print_ser("Framebuffer!\r\n");
+    //     uint32_t *fba = (uint32_t *)fb->common.framebuffer_addr;
+    //     // print_uint((uint32_t)((uint64_t)fba >> 32));
+    //     print_uint((uint32_t)((uint64_t)fba));
+    //     for (uint32_t y = 0; y < fb->common.framebuffer_height; ++y) {
+    //         for (uint32_t x = 0; x < fb->common.framebuffer_width; ++x) {
+    //             fba[y * fb->common.framebuffer_pitch / 4 + x] = 0x00fffff;
+    //         }
+    //     }
+    // }
 
     asm volatile("cli");
     while (true) {
