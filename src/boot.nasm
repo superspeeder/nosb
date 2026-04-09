@@ -264,6 +264,7 @@ resb 4096
 ; Static Variables
 align 4
 mbi_ptr: resb 4
+global paging_5
 paging_5: resb 4
 
 

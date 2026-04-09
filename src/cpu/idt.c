@@ -1,4 +1,8 @@
 #include "idt.h"
+
+#include "pic.h"
+#include "ports.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -14,6 +18,13 @@ void idt_init() {
     idtr.limit = (uint16_t)sizeof(idt_entry_t) * IDT_MAX_DESCRIPTORS - 1;
 
     for (uint8_t vector = 0 ; vector < 32; vector++) {
+        idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+        vectors[vector] = true;
+    }
+
+    pic_init();
+
+    for (uint8_t vector = 32 ; vector < 48; vector++) {
         idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
         vectors[vector] = true;
     }
